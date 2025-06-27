@@ -1,6 +1,4 @@
 // index.js
-import express from "express";
-import cors from "cors";
 
 const express = require("express");
 const bodyParser = require("body-parser");
