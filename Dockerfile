@@ -1,22 +1,20 @@
-# Use minimal LaTeX image
-FROM blang/latex:ubuntu
+# Use recent Node image with Debian
+FROM node:18-bullseye-slim
 
-# Install Node.js (v18)
+# Install LaTeX tools
 RUN apt-get update && \
-    apt-get install -y curl gnupg && \
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
+    apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files and install deps
+# Copy and install Node dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy rest of the code
+# Copy the rest of the app
 COPY . .
 
-# Run server
+# Start server
 CMD ["node", "index.js"]
