@@ -1,7 +1,7 @@
-# Base: use lighter TeXLive variant
-FROM ghcr.io/sile-typesetter/texlive:latest
+# Use official TeXLive full image (works with Railway)
+FROM texlive/texlive:full
 
-# Install Node.js (minimal, clean)
+# Install Node.js
 RUN apt-get update && \
     apt-get install -y curl gnupg && \
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
@@ -11,11 +11,11 @@ RUN apt-get update && \
 # Set working directory
 WORKDIR /app
 
-# Copy only what's needed
+# Copy package files and install deps
 COPY package*.json ./
 RUN npm install
 
-# Now copy the rest
+# Copy the rest
 COPY . .
 
 # Run app
