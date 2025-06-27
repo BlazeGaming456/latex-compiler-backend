@@ -1,7 +1,7 @@
-# Use official TeXLive full image (works with Railway)
-FROM texlive/texlive:full
+# Use minimal LaTeX image
+FROM blang/latex:ubuntu
 
-# Install Node.js
+# Install Node.js (v18)
 RUN apt-get update && \
     apt-get install -y curl gnupg && \
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
@@ -15,8 +15,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copy the rest
+# Copy rest of the code
 COPY . .
 
-# Run app
+# Run server
 CMD ["node", "index.js"]
