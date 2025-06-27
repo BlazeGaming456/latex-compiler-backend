@@ -1,49 +1,53 @@
-// index.js
-
-const express = require("express");
-const bodyParser = require("body-parser");
-const fs = require("fs");
-const cors = require("cors");
-const { exec } = require("child_process");
-const path = require("path");
-
-const app = express();
-app.use(bodyParser.json());
-
-app.use(cors());
-app.use(express.json());
-
 app.post("/compile", async (req, res) => {
   const { code } = req.body;
 
-  const filename = "resume";
-  const texPath = `/tmp/${filename}.tex`;
-  const pdfPath = `/tmp/${filename}.pdf`;
+  // Create unique filename
+  const filename = `resume-${Date.now()}`;
+  const texPath = `./${filename}.tex`;
+  const pdfPath = `./${filename}.pdf`;
 
-  //Writing the latex code to the file
-  fs.writeFileSync(texPath, code);
+  try {
+    // Write LaTeX file
+    fs.writeFileSync(texPath, code);
 
-  //Executing the pdflatex module.
-  //Non-stop mode is to ignore latex error
-  //We also specify the output directory
-  exec(
-    `pdflatex -interaction=nonstopmode -output-directory=/tmp ${texPath}`,
-    (error, stdout, stderr) => {
-      if (error || !fs.existsSync(pdfPath)) {
-        console.error("Compilation error:", stderr);
-        return res.status(500).send("LaTeX compilation failed.");
+    // Execute pdflatex
+    exec(
+      `pdflatex -interaction=nonstopmode -output-directory=. ${texPath}`,
+      (error, stdout, stderr) => {
+        console.log('pdflatex stdout:', stdout);
+        console.log('pdflatex stderr:', stderr);
+        
+        // Clean up auxiliary files
+        ['aux', 'log', 'out'].forEach(ext => {
+          try {
+            fs.unlinkSync(`./${filename}.${ext}`);
+          } catch (e) {}
+        });
+
+        if (error || !fs.existsSync(pdfPath)) {
+          console.error('Compilation failed:', {error, stderr});
+          return res.status(500).json({
+            error: "LaTeX compilation failed",
+            details: stderr.toString(),
+            logs: stdout.toString()
+          });
+        }
+
+        // Send PDF
+        const pdf = fs.readFileSync(pdfPath);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.send(pdf);
+        
+        // Clean up PDF and tex file after sending
+        fs.unlinkSync(pdfPath);
+        fs.unlinkSync(texPath);
       }
-
-      //Save the PDF and return it
-      const pdf = fs.readFileSync(pdfPath);
-      res.setHeader("Content-Type", "application/pdf");
-      res.send(pdf);
-    }
-  );
+    );
+  } catch (err) {
+    console.error('Server error:', err);
+    res.status(500).json({
+      error: "Server error during compilation",
+      details: err.message
+    });
+  }
 });
-
-//Calling the port
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () =>
-  console.log(`🚀 LaTeX compiler backend running on port ${PORT}`)
-);
