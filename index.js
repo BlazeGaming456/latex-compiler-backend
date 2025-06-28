@@ -4,8 +4,13 @@ const { exec } = require("child_process");
 const cors = require("cors");
 
 const app = express();
+
+// ✅ Enable CORS for all origins (or configure as needed)
 app.use(cors());
 app.use(express.json());
+
+// ✅ Handle preflight requests (especially needed for POSTs with JSON)
+app.options("/compile", cors());
 
 app.post("/compile", async (req, res) => {
   const { code } = req.body;
@@ -20,11 +25,10 @@ app.post("/compile", async (req, res) => {
     exec(
       `pdflatex -interaction=nonstopmode -output-directory=. ${texPath}`,
       (error, stdout, stderr) => {
-        // Clean up
         ["aux", "log", "out"].forEach(ext => {
           try {
             fs.unlinkSync(`./${filename}.${ext}`);
-          } catch (e) {}
+          } catch (_) {}
         });
 
         if (error || !fs.existsSync(pdfPath)) {
@@ -51,4 +55,6 @@ app.post("/compile", async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log("Server running on port 3000"));
+// ✅ Use a different port if Railway expects 8080
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
